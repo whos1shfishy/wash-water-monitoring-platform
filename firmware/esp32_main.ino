@@ -1,5 +1,5 @@
 /*
- * AquaSense — ESP32 Main Firmware
+ *  — ESP32 Main Firmware
  * RAMSoc Hackathon 2026
  *
  * Reads turbidity + temperature, drives LCD, pump relay,
