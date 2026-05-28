@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AquaNet — Water Quality Monitoring Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#080f14;
+  --bg2:#0c151d;
+  --bg3:#111c27;
+  --bg4:#162230;
+  --border:#1e3040;
+  --border2:#243a4e;
+  --cyan:#00d4c8;
+  --cyan2:#00a89e;
+  --cyan3:#007a72;
+  --teal:#0891b2;
+  --teal2:#0e7490;
+  --amber:#f59e0b;
+  --amber2:#d97706;
+  --red:#ef4444;
+  --red2:#dc2626;
+  --green:#10b981;
+  --green2:#059669;
+  --txt:#e2eef8;
+  --txt2:#8aa8c0;
+  --txt3:#4d7090;
+  --card-r:8px;
+  --font-head:'Syne',sans-serif;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'DM Mono',monospace;
+}
+html{background:var(--bg);color:var(--txt);font-family:var(--font-body);font-size:13px;overflow-x:hidden}
+body{display:flex;flex-direction:column;min-height:100vh}
+
+/* HEADER */
+.header{
+  display:flex;align-items:center;gap:20px;
+  padding:0 20px;height:52px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;position:sticky;top:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo-mark{
+  width:32px;height:32px;border-radius:6px;
+  background:linear-gradient(135deg,var(--cyan3),var(--teal));
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-head);font-weight:800;font-size:16px;color:#fff;
+  letter-spacing:-1px;
+}
+.logo-name{font-family:var(--font-head);font-size:18px;font-weight:700;color:var(--txt);letter-spacing:-0.5px}
+.logo-name span{color:var(--cyan)}
+.h-badge{
+  display:flex;align-items:center;gap:5px;padding:3px 10px;
+  border-radius:20px;font-size:11px;font-weight:500;
+  background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.2);
+}
+.h-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.h-stat{display:flex;flex-direction:column;gap:1px;padding:0 14px;border-left:1px solid var(--border)}
+.h-stat .label{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em}
+.h-stat .val{font-family:var(--font-mono);font-size:13px;font-weight:500;color:var(--txt)}
+.h-stat .val.cyan{color:var(--cyan)}
+.h-stat .val.amber{color:var(--amber)}
+.h-stat .val.red{color:var(--red)}
+.spacer{flex:1}
+.use-tabs{display:flex;gap:2px;background:var(--bg3);border-radius:6px;padding:3px}
+.use-tab{
+  padding:4px 12px;border-radius:4px;font-size:11px;font-weight:500;cursor:pointer;
+  color:var(--txt3);transition:all .2s;border:none;background:none;
+}
+.use-tab.active{background:var(--bg4);color:var(--cyan);border:1px solid var(--border2)}
+.alert-btn{
+  display:flex;align-items:center;gap:6px;padding:5px 12px;
+  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);
+  border-radius:6px;color:var(--red);font-size:11px;font-weight:500;cursor:pointer;
+}
+
+/* LAYOUT */
+.main{display:grid;grid-template-columns:260px 1fr 300px;flex:1;min-height:0;overflow:hidden}
+
+/* LEFT SIDEBAR */
+.sidebar{
+  background:var(--bg2);border-right:1px solid var(--border);
+  overflow-y:auto;display:flex;flex-direction:column;gap:0;
+}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.s-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.s-title{
+  font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);
+  font-weight:600;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;
+}
+.s-title a{color:var(--cyan);font-size:10px;text-transform:none;letter-spacing:0;cursor:pointer;text-decoration:none}
+
+/* Fleet cards */
+.fleet-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fleet-card{
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--card-r);
+  padding:10px;display:flex;flex-direction:column;gap:2px;
+}
+.fleet-card .fc-val{font-family:var(--font-mono);font-size:22px;font-weight:400;color:var(--txt)}
+.fleet-card .fc-val.cyan{color:var(--cyan)}
+.fleet-card .fc-val.amber{color:var(--amber)}
+.fleet-card .fc-val.red{color:var(--red)}
+.fleet-card .fc-label{font-size:10px;color:var(--txt3)}
+
+/* Zone list */
+.zone-item{
+  display:flex;align-items:center;gap:8px;padding:7px 0;
+  border-bottom:1px solid var(--border);cursor:pointer;transition:opacity .2s;
+}
+.zone-item:last-child{border:none}
+.zone-item:hover{opacity:.8}
+.zone-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.zone-dot.green{background:var(--green)}
+.zone-dot.amber{background:var(--amber)}
+.zone-dot.red{background:var(--red)}
+.zone-name{flex:1;color:var(--txt);font-size:12px}
+.zone-count{font-family:var(--font-mono);font-size:11px;color:var(--txt3)}
+
+/* Alerts */
+.alert-item{
+  background:var(--bg3);border-radius:6px;padding:9px 10px;margin-bottom:6px;
+  border-left:3px solid var(--amber);cursor:pointer;
+  transition:transform .1s;
+}
+.alert-item:last-child{margin:0}
+.alert-item.red{border-color:var(--red)}
+.alert-item:hover{transform:translateX(2px)}
+.alert-item .a-time{font-family:var(--font-mono);font-size:10px;color:var(--txt3);margin-bottom:3px}
+.alert-item .a-msg{font-size:11px;color:var(--txt);line-height:1.4}
+.alert-item .a-zone{font-size:10px;color:var(--txt3);margin-top:3px}
+
+/* Action items */
+.action-item{
+  display:flex;align-items:flex-start;gap:8px;padding:7px 0;
+  border-bottom:1px solid var(--border);
+}
+.action-item:last-child{border:none}
+.action-num{
+  width:18px;height:18px;border-radius:50%;background:var(--bg4);
+  border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:600;color:var(--txt3);flex-shrink:0;margin-top:1px;
+}
+.action-txt{font-size:11px;color:var(--txt2);line-height:1.5}
+
+/* CENTER MAP */
+.center{background:var(--bg);overflow-y:auto;display:flex;flex-direction:column}
+.center::-webkit-scrollbar{width:4px}
+.center::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+.map-area{
+  position:relative;flex-shrink:0;
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  overflow:hidden;
+}
+.map-canvas{position:relative;width:100%;height:340px}
+.map-bg{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 70% 50% at 40% 55%, rgba(0,60,80,.5) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 70% 35%, rgba(0,50,70,.4) 0%, transparent 60%),
+    radial-gradient(ellipse 25% 20% at 25% 70%, rgba(0,40,60,.35) 0%, transparent 55%);
+}
+.map-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(0,212,200,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,200,.04) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+/* Water bodies drawn with SVG in JS */
+.map-water{position:absolute;inset:0;pointer-events:none}
+.map-overlay{position:absolute;inset:0}
+
+/* Node markers */
+.node-marker{
+  position:absolute;width:14px;height:14px;border-radius:50%;
+  transform:translate(-50%,-50%);cursor:pointer;transition:transform .2s;
+  display:flex;align-items:center;justify-content:center;
+}
+.node-marker:hover{transform:translate(-50%,-50%) scale(1.4)}
+.node-marker.green{background:var(--green);box-shadow:0 0 0 3px rgba(16,185,129,.2)}
+.node-marker.amber{background:var(--amber);box-shadow:0 0 0 3px rgba(245,158,11,.2)}
+.node-marker.red{background:var(--red);box-shadow:0 0 0 3px rgba(239,68,68,.2)}
+.node-marker.selected{box-shadow:0 0 0 3px rgba(0,212,200,.4),0 0 0 6px rgba(0,212,200,.15)!important}
+.node-ripple{
+  position:absolute;width:14px;height:14px;border-radius:50%;
+  transform:translate(-50%,-50%);pointer-events:none;
+  animation:ripple 2.5s ease-out infinite;border:1px solid currentColor;opacity:0;
+}
+@keyframes ripple{0%{width:14px;height:14px;opacity:.6}100%{width:50px;height:50px;opacity:0}}
+.node-tooltip{
+  position:absolute;background:var(--bg2);border:1px solid var(--border2);
+  border-radius:6px;padding:8px 10px;min-width:160px;pointer-events:none;
+  transform:translate(-50%,-110%);margin-top:-8px;z-index:50;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);
+}
+.node-tooltip .nt-id{font-family:var(--font-mono);font-size:11px;color:var(--cyan);margin-bottom:5px}
+.node-tooltip .nt-row{display:flex;justify-content:space-between;gap:12px;font-size:11px;padding:1px 0}
+.node-tooltip .nt-row .k{color:var(--txt3)}
+.node-tooltip .nt-row .v{color:var(--txt);font-family:var(--font-mono)}
+.node-label{
+  position:absolute;transform:translate(-50%,8px);
+  font-family:var(--font-mono);font-size:9px;color:var(--txt3);white-space:nowrap;
+  pointer-events:none;
+}
+
+/* Map zone labels */
+.zone-label{
+  position:absolute;font-size:10px;color:rgba(0,212,200,.5);
+  text-transform:uppercase;letter-spacing:.1em;font-weight:600;
+  pointer-events:none;font-family:var(--font-head);
+}
+
+/* Map controls */
+.map-controls{
+  position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:6px;
+}
+.map-ctl-btn{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:5px;
+  padding:5px 10px;font-size:10px;color:var(--txt2);cursor:pointer;
+  transition:all .15s;white-space:nowrap;
+}
+.map-ctl-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.map-ctl-btn.active{background:rgba(0,212,200,.1);border-color:var(--cyan);color:var(--cyan)}
+.map-legend{
+  position:absolute;bottom:12px;left:12px;background:rgba(8,15,20,.8);
+  border:1px solid var(--border);border-radius:6px;padding:8px 12px;
+  display:flex;gap:12px;
+}
+.map-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--txt3)}
+.map-legend-dot{width:8px;height:8px;border-radius:50%}
+
+/* CHARTS AREA */
+.charts-area{padding:16px;display:flex;flex-direction:column;gap:12px}
+.charts-header{display:flex;align-items:center;justify-content:space-between}
+.charts-title{font-family:var(--font-head);font-size:14px;font-weight:600;color:var(--txt)}
+.chart-period-tabs{display:flex;gap:2px}
+.cpt{
+  padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer;
+  color:var(--txt3);border:1px solid transparent;transition:all .15s;
+}
+.cpt.active{color:var(--cyan);border-color:var(--border2);background:var(--bg3)}
+
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chart-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);
+  padding:12px;
+}
+.chart-card.wide{grid-column:span 2}
+.cc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cc-title{font-size:11px;color:var(--txt2);font-weight:500}
+.cc-value{display:flex;align-items:baseline;gap:4px}
+.cc-val{font-family:var(--font-mono);font-size:18px;font-weight:400;color:var(--txt)}
+.cc-unit{font-size:10px;color:var(--txt3)}
+.cc-trend{
+  font-size:10px;padding:2px 6px;border-radius:10px;
+}
+.cc-trend.up{background:rgba(16,185,129,.1);color:var(--green)}
+.cc-trend.down{background:rgba(239,68,68,.1);color:var(--red)}
+.cc-trend.warn{background:rgba(245,158,11,.1);color:var(--amber)}
+.chart-wrap{position:relative;height:80px}
+.chart-wrap.tall{height:120px}
+
+/* SAFETY INDEX */
+.safety-index{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);
+  padding:14px 16px;display:flex;align-items:center;gap:20px;flex-shrink:0;
+}
+.si-score-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.si-score{
+  font-family:var(--font-head);font-size:48px;font-weight:800;
+  background:linear-gradient(135deg,var(--cyan),var(--green));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  line-height:1;
+}
+.si-label{font-size:10px;color:var(--txt3);margin-top:2px;text-align:center}
+.si-factors{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.si-factor{background:var(--bg3);border-radius:5px;padding:7px 9px;border:1px solid var(--border)}
+.si-f-name{font-size:10px;color:var(--txt3);margin-bottom:3px}
+.si-f-bar{height:3px;background:var(--bg4);border-radius:2px;margin-bottom:3px}
+.si-f-fill{height:100%;border-radius:2px;transition:width .6s}
+.si-f-val{font-family:var(--font-mono);font-size:11px;color:var(--txt);font-weight:500}
+
+/* MODULAR ARCHITECTURE */
+.arch-panel{
+  margin:0 16px 12px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;
+}
+.arch-title{font-family:var(--font-head);font-size:13px;font-weight:600;margin-bottom:12px;color:var(--txt)}
+.arch-nodes{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.arch-nodes::-webkit-scrollbar{height:3px}
+.arch-nodes::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.arch-node{flex-shrink:0;width:120px}
+.arch-node-title{
+  font-size:9px;text-align:center;color:var(--txt3);margin-bottom:6px;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.arch-stack{display:flex;flex-direction:column;gap:2px}
+.arch-layer{
+  border-radius:4px;padding:5px 6px;text-align:center;
+  font-size:9px;font-weight:500;line-height:1.3;cursor:pointer;
+  transition:filter .15s;position:relative;
+}
+.arch-layer:hover{filter:brightness(1.2)}
+.arch-layer.power{background:rgba(245,158,11,.15);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.arch-layer.comm{background:rgba(8,145,178,.15);color:#38bdf8;border:1px solid rgba(8,145,178,.2)}
+.arch-layer.ctrl{background:rgba(0,212,200,.12);color:var(--cyan);border:1px solid rgba(0,212,200,.2)}
+.arch-layer.sensor{background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.2)}
+.arch-layer.treatment{background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.2)}
+.arch-layer.future{
+  background:rgba(75,85,99,.08);color:rgba(156,163,175,.6);
+  border:1px dashed rgba(75,85,99,.4);font-style:italic;
+}
+
+/* SCALE GRAPHIC */
+.scale-panel{
+  margin:0 16px 12px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;
+}
+.scale-title{font-family:var(--font-head);font-size:13px;font-weight:600;margin-bottom:12px;color:var(--txt)}
+.scale-stages{display:flex;align-items:center;gap:0}
+.scale-stage{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1}
+.scale-dots{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;min-height:36px;align-items:center}
+.scale-dot{width:10px;height:10px;border-radius:50%;background:var(--cyan);opacity:.7}
+.scale-dot.amber{background:var(--amber)}
+.scale-dot.red{background:var(--red)}
+.scale-dot-big{width:13px;height:13px;border-radius:50%;background:var(--cyan)}
+.scale-label{font-size:10px;color:var(--txt3);text-align:center;line-height:1.4}
+.scale-count{font-family:var(--font-mono);font-size:16px;color:var(--txt);text-align:center}
+.scale-arrow{color:var(--txt3);font-size:18px;flex-shrink:0;padding:0 4px}
+.scale-coverage{
+  font-size:9px;color:var(--cyan);text-align:center;
+  background:rgba(0,212,200,.08);padding:2px 6px;border-radius:3px;
+  border:1px solid rgba(0,212,200,.15);
+}
+
+/* VISION PANEL */
+.vision-panel{
+  margin:0 16px 16px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px;
+}
+.vision-title{font-family:var(--font-head);font-size:13px;font-weight:600;margin-bottom:4px;color:var(--txt)}
+.vision-sub{font-size:11px;color:var(--txt3);margin-bottom:12px}
+.vision-items{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vision-item{
+  background:var(--bg3);border:1px dashed var(--border2);border-radius:6px;padding:9px 10px;
+  position:relative;overflow:hidden;
+}
+.vision-item::before{
+  content:'FUTURE';position:absolute;top:6px;right:6px;
+  font-size:8px;letter-spacing:.1em;color:rgba(167,139,250,.5);font-weight:700;
+  font-family:var(--font-mono);
+}
+.vi-name{font-size:11px;color:rgba(167,139,250,.8);font-weight:500;margin-bottom:2px}
+.vi-desc{font-size:10px;color:var(--txt3);line-height:1.4}
+.vi-eta{
+  display:inline-block;margin-top:5px;font-size:9px;
+  color:rgba(167,139,250,.5);font-family:var(--font-mono);
+}
+
+/* RIGHT PANEL */
+.right-panel{
+  background:var(--bg2);border-left:1px solid var(--border);
+  overflow-y:auto;display:flex;flex-direction:column;
+}
+.right-panel::-webkit-scrollbar{width:4px}
+.right-panel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.rp-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.rp-title{
+  font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);
+  font-weight:600;margin-bottom:10px;
+}
+.node-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.node-id{font-family:var(--font-mono);font-size:20px;color:var(--cyan);font-weight:400}
+.node-status-badge{
+  padding:3px 8px;border-radius:10px;font-size:10px;font-weight:500;
+}
+.node-status-badge.green{background:rgba(16,185,129,.1);color:var(--green);border:1px solid rgba(16,185,129,.2)}
+.node-status-badge.amber{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.node-status-badge.red{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.node-gps{font-family:var(--font-mono);font-size:10px;color:var(--txt3);margin-top:3px}
+
+.node-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.node-stat{
+  background:var(--bg3);border:1px solid var(--border);border-radius:5px;
+  padding:8px;
+}
+.ns-label{font-size:10px;color:var(--txt3);margin-bottom:3px}
+.ns-val{font-family:var(--font-mono);font-size:15px;color:var(--txt);font-weight:400}
+.ns-val.cyan{color:var(--cyan)}
+.ns-val.amber{color:var(--amber)}
+.ns-val.green{color:var(--green)}
+
+/* Battery bar */
+.battery-bar{height:6px;background:var(--bg4);border-radius:3px;margin-top:4px;overflow:hidden}
+.battery-fill{height:100%;border-radius:3px;transition:width .5s}
+.battery-fill.green{background:var(--green)}
+.battery-fill.amber{background:var(--amber)}
+.battery-fill.red{background:var(--red)}
+
+/* Signal bars */
+.signal-bars{display:flex;align-items:flex-end;gap:2px;height:16px}
+.sb{border-radius:1px;background:var(--border2)}
+.sb.active{background:var(--cyan)}
+
+/* Sensors list */
+.sensor-list{display:flex;flex-direction:column;gap:4px}
+.sensor-tag{
+  display:flex;align-items:center;gap:6px;padding:5px 8px;
+  background:var(--bg3);border-radius:4px;border:1px solid var(--border);
+}
+.sensor-tag .st-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.sensor-tag .st-name{font-size:11px;color:var(--txt)}
+.sensor-tag .st-val{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--txt2)}
+
+/* Treatment panel */
+.treatment-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.treat-card{
+  background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:8px;
+}
+.tc-label{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.tc-val{font-size:12px;color:var(--txt);font-weight:500}
+.tc-val.green{color:var(--green)}
+.tc-val.amber{color:var(--amber)}
+.tc-val.red{color:var(--red)}
+
+/* Maint schedule */
+.maint-item{
+  display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);
+}
+.maint-item:last-child{border:none}
+.maint-icon{width:28px;height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.maint-icon.green{background:rgba(16,185,129,.1)}
+.maint-icon.amber{background:rgba(245,158,11,.1)}
+.maint-icon.red{background:rgba(239,68,68,.1)}
+.maint-info{flex:1}
+.maint-task{font-size:11px;color:var(--txt)}
+.maint-date{font-size:10px;color:var(--txt3)}
+.maint-badge{
+  font-size:9px;padding:2px 6px;border-radius:3px;font-weight:500;white-space:nowrap;
+}
+.maint-badge.green{background:rgba(16,185,129,.1);color:var(--green)}
+.maint-badge.amber{background:rgba(245,158,11,.1);color:var(--amber)}
+.maint-badge.red{background:rgba(239,68,68,.1);color:var(--red)}
+
+/* Overlay toggle */
+.overlay-toggles{
+  position:absolute;bottom:12px;right:12px;display:flex;gap:6px;
+}
+.overlay-btn{
+  padding:4px 9px;border-radius:4px;font-size:10px;cursor:pointer;
+  background:rgba(8,15,20,.8);border:1px solid var(--border2);color:var(--txt3);
+  transition:all .15s;
+}
+.overlay-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.overlay-btn.active{background:rgba(0,212,200,.1);border-color:var(--cyan);color:var(--cyan)}
+.overlay-btn.algal.active{background:rgba(16,185,129,.1);border-color:var(--green);color:var(--green)}
+.overlay-btn.runoff.active{background:rgba(245,158,11,.1);border-color:var(--amber);color:var(--amber)}
+.overlay-btn.treat.active{background:rgba(167,139,250,.1);border-color:#a78bfa;color:#a78bfa}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-mark">AQ</div>
+    <span class="logo-name">Aqua<span>Net</span></span>
+  </div>
+  <div class="h-badge">
+    <span class="dot"></span>
+    Network Healthy
+  </div>
+  <div class="h-stat">
+    <span class="label">Active Nodes</span>
+    <span class="val cyan">12 / 12</span>
+  </div>
+  <div class="h-stat">
+    <span class="label">LoRa Gateway</span>
+    <span class="val cyan">Connected — 3 GW</span>
+  </div>
+  <div class="h-stat">
+    <span class="label">Solar Fleet</span>
+    <span class="val amber">84W avg · 91% Bat</span>
+  </div>
+  <div class="h-stat">
+    <span class="label">Data Rate</span>
+    <span class="val">5 min intervals</span>
+  </div>
+  <div class="spacer"></div>
+  <div class="use-tabs" id="useTabs">
+    <button class="use-tab active" data-tab="aqua" onclick="switchTab(this,'aqua')">Aquaculture</button>
+    <button class="use-tab" data-tab="irr" onclick="switchTab(this,'irr')">Irrigation</button>
+    <button class="use-tab" data-tab="pool" onclick="switchTab(this,'pool')">Pools</button>
+    <button class="use-tab" data-tab="env" onclick="switchTab(this,'env')">Environmental</button>
+  </div>
+  <div class="alert-btn" onclick="scrollToAlerts()">
+    ⚠ 3 Alerts
+  </div>
+</header>
+
+<!-- MAIN GRID -->
+<div class="main">
+
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar">
+    <div class="s-section">
+      <div class="s-title">Fleet Summary</div>
+      <div class="fleet-grid">
+        <div class="fleet-card">
+          <span class="fc-val cyan">12</span>
+          <span class="fc-label">Total Nodes</span>
+        </div>
+        <div class="fleet-card">
+          <span class="fc-val green">9</span>
+          <span class="fc-label">Nominal</span>
+        </div>
+        <div class="fleet-card">
+          <span class="fc-val amber">2</span>
+          <span class="fc-label">Warning</span>
+        </div>
+        <div class="fleet-card">
+          <span class="fc-val red">1</span>
+          <span class="fc-label">Critical</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-title">Deployment Zones <a>Manage</a></div>
+      <div class="zone-item" onclick="filterZone('A')">
+        <div class="zone-dot green"></div>
+        <span class="zone-name">Zone A — Main Reservoir</span>
+        <span class="zone-count">4 nodes</span>
+      </div>
+      <div class="zone-item" onclick="filterZone('B')">
+        <div class="zone-dot amber"></div>
+        <span class="zone-name">Zone B — East Pond</span>
+        <span class="zone-count">3 nodes</span>
+      </div>
+      <div class="zone-item" onclick="filterZone('C')">
+        <div class="zone-dot red"></div>
+        <span class="zone-name">Zone C — Channel 3</span>
+        <span class="zone-count">2 nodes</span>
+      </div>
+      <div class="zone-item" onclick="filterZone('D')">
+        <div class="zone-dot green"></div>
+        <span class="zone-name">Zone D — Aquaculture Pen</span>
+        <span class="zone-count">3 nodes</span>
+      </div>
+    </div>
+
+    <div class="s-section" id="alert-section">
+      <div class="s-title">Active Alerts</div>
+      <div class="alert-item red">
+        <div class="a-time">09:42 UTC · HIGH PRIORITY</div>
+        <div class="a-msg">High turbidity detected — potential agricultural runoff signature</div>
+        <div class="a-zone">Zone B · Node AQN-007</div>
+      </div>
+      <div class="alert-item">
+        <div class="a-time">09:35 UTC · MEDIUM</div>
+        <div class="a-msg">Dissolved oxygen trending low — approaching 5.0 mg/L threshold</div>
+        <div class="a-zone">Zone C · Node AQN-009</div>
+      </div>
+      <div class="alert-item">
+        <div class="a-time">08:17 UTC · LOW</div>
+        <div class="a-msg">Filter pod nearing replacement threshold (87% capacity used)</div>
+        <div class="a-zone">Zone A · Node AQN-002</div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-title">Recommended Actions</div>
+      <div class="action-item">
+        <div class="action-num">1</div>
+        <div class="action-txt">Dispatch service to AQN-007 — filter replacement + turbidity investigation</div>
+      </div>
+      <div class="action-item">
+        <div class="action-num">2</div>
+        <div class="action-txt">Increase DO monitoring frequency in Zone C to 2-min intervals</div>
+      </div>
+      <div class="action-item">
+        <div class="action-num">3</div>
+        <div class="action-txt">Activate UV-LED disinfection protocol on Zone B nodes</div>
+      </div>
+      <div class="action-item">
+        <div class="action-num">4</div>
+        <div class="action-txt">Schedule quarterly calibration for AQN-001, AQN-004, AQN-011</div>
+      </div>
+    </div>
+
+    <div class="s-section">
+      <div class="s-title">Filter Health Queue</div>
+      <div class="zone-item">
+        <div class="zone-dot red"></div>
+        <span class="zone-name">AQN-007 — Carbon pod</span>
+        <span class="zone-count" style="color:var(--red)">87%</span>
+      </div>
+      <div class="zone-item">
+        <div class="zone-dot amber"></div>
+        <span class="zone-name">AQN-002 — Membrane</span>
+        <span class="zone-count" style="color:var(--amber)">72%</span>
+      </div>
+      <div class="zone-item">
+        <div class="zone-dot amber"></div>
+        <span class="zone-name">AQN-009 — Carbon pod</span>
+        <span class="zone-count" style="color:var(--amber)">61%</span>
+      </div>
+      <div class="zone-item">
+        <div class="zone-dot green"></div>
+        <span class="zone-name">AQN-001 — All pods</span>
+        <span class="zone-count">23%</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTER -->
+  <section class="center">
+
+    <!-- MAP -->
+    <div class="map-area">
+      <div class="map-canvas" id="mapCanvas">
+        <div class="map-bg"></div>
+        <div class="map-grid"></div>
+        <svg class="map-water" viewBox="0 0 680 340" preserveAspectRatio="none" id="waterSvg">
+          <!-- Main reservoir -->
+          <ellipse cx="220" cy="160" rx="130" ry="90" fill="rgba(0,80,120,.35)" stroke="rgba(0,212,200,.15)" stroke-width="1"/>
+          <!-- East pond -->
+          <ellipse cx="480" cy="130" rx="80" ry="55" fill="rgba(0,70,100,.3)" stroke="rgba(0,212,200,.12)" stroke-width="1"/>
+          <!-- Channel -->
+          <path d="M200 250 Q280 270 360 260 Q420 255 500 270" fill="none" stroke="rgba(0,100,140,.5)" stroke-width="18" stroke-linecap="round"/>
+          <!-- Aqua pen -->
+          <rect x="50" y="60" width="90" height="70" rx="8" fill="rgba(0,60,90,.3)" stroke="rgba(0,212,200,.1)" stroke-width="1"/>
+          <!-- Contour lines -->
+          <ellipse cx="220" cy="160" rx="145" ry="100" fill="none" stroke="rgba(0,212,200,.05)" stroke-width="1"/>
+          <ellipse cx="220" cy="160" rx="160" ry="112" fill="none" stroke="rgba(0,212,200,.03)" stroke-width="1"/>
+        </svg>
+        <div class="map-overlay" id="mapOverlay"></div>
+
+        <!-- Zone labels -->
+        <div class="zone-label" style="left:160px;top:190px">Zone A</div>
+        <div class="zone-label" style="left:430px;top:155px">Zone B</div>
+        <div class="zone-label" style="left:280px;top:275px">Zone C</div>
+        <div class="zone-label" style="left:55px;top:105px">Zone D</div>
+
+        <div class="map-controls">
+          <button class="map-ctl-btn active" onclick="toggleMapMode(this)">Satellite</button>
+          <button class="map-ctl-btn" onclick="toggleFuture(this)">Future Mode</button>
+        </div>
+
+        <div class="overlay-toggles">
+          <button class="overlay-btn algal" onclick="toggleOverlay(this,'algal')">Algal Risk</button>
+          <button class="overlay-btn runoff" onclick="toggleOverlay(this,'runoff')">Runoff Risk</button>
+          <button class="overlay-btn treat" onclick="toggleOverlay(this,'treat')">Treatment Priority</button>
+        </div>
+
+        <div class="map-legend">
+          <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--green)"></div>Nominal</div>
+          <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--amber)"></div>Warning</div>
+          <div class="map-legend-item"><div class="map-legend-dot" style="background:var(--red)"></div>Critical</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAFETY INDEX + CHARTS -->
+    <div class="charts-area">
+      <!-- Water Safety Index -->
+      <div class="safety-index">
+        <div class="si-score-wrap">
+          <div class="si-score" id="siScore">82</div>
+          <div class="si-label">Water Safety Index<br>Fleet Average</div>
+        </div>
+        <div class="si-factors">
+          <div class="si-factor">
+            <div class="si-f-name">Turbidity</div>
+            <div class="si-f-bar"><div class="si-f-fill" style="width:72%;background:var(--amber)"></div></div>
+            <div class="si-f-val" style="color:var(--amber)">MODERATE</div>
+          </div>
+          <div class="si-factor">
+            <div class="si-f-name">Dissolved O₂</div>
+            <div class="si-f-bar"><div class="si-f-fill" style="width:84%;background:var(--green)"></div></div>
+            <div class="si-f-val" style="color:var(--green)">GOOD</div>
+          </div>
+          <div class="si-factor">
+            <div class="si-f-name">pH Balance</div>
+            <div class="si-f-bar"><div class="si-f-fill" style="width:91%;background:var(--green)"></div></div>
+            <div class="si-f-val" style="color:var(--green)">OPTIMAL</div>
+          </div>
+          <div class="si-factor">
+            <div class="si-f-name">Nitrates</div>
+            <div class="si-f-bar"><div class="si-f-fill" style="width:58%;background:var(--amber)"></div></div>
+            <div class="si-f-val" style="color:var(--amber)">ELEVATED</div>
+          </div>
+          <div class="si-factor">
+            <div class="si-f-name">Chlorophyll-a</div>
+            <div class="si-f-bar"><div class="si-f-fill" style="width:45%;background:var(--red)"></div></div>
+            <div class="si-f-val" style="color:var(--red)">HIGH RISK</div>
+          </div>
+          <div class="si-factor">
+            <div class="si-f-name">ORP</div>
+            <div class="si-f-bar"><div class="si-f-fill" style="width:88%;background:var(--green)"></div></div>
+            <div class="si-f-val" style="color:var(--green)">GOOD</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts header -->
+      <div class="charts-header">
+        <div class="charts-title" id="chartsTitle">AQN-001 · Time Series — Zone A Main Reservoir</div>
+        <div class="chart-period-tabs">
+          <button class="cpt active" onclick="setPeriod(this,'1h')">1H</button>
+          <button class="cpt" onclick="setPeriod(this,'6h')">6H</button>
+          <button class="cpt" onclick="setPeriod(this,'24h')">24H</button>
+          <button class="cpt" onclick="setPeriod(this,'7d')">7D</button>
+        </div>
+      </div>
+
+      <!-- Mini metric cards -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="cc-header">
+            <span class="cc-title">Turbidity</span>
+            <span class="cc-trend warn">▲ +2.1 NTU/hr</span>
+          </div>
+          <div class="cc-value"><span class="cc-val">18.4</span><span class="cc-unit">NTU</span></div>
+          <div class="chart-wrap">
+            <canvas id="chartTurb" role="img" aria-label="Turbidity over time">Turbidity readings from AQN-001.</canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-header">
+            <span class="cc-title">Temperature</span>
+            <span class="cc-trend up">Stable</span>
+          </div>
+          <div class="cc-value"><span class="cc-val">22.6</span><span class="cc-unit">°C</span></div>
+          <div class="chart-wrap">
+            <canvas id="chartTemp" role="img" aria-label="Temperature over time">Temperature readings from AQN-001.</canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-header">
+            <span class="cc-title">pH</span>
+            <span class="cc-trend up">Optimal range</span>
+          </div>
+          <div class="cc-value"><span class="cc-val">7.42</span><span class="cc-unit">pH</span></div>
+          <div class="chart-wrap">
+            <canvas id="chartPH" role="img" aria-label="pH over time">pH readings from AQN-001.</canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-header">
+            <span class="cc-title">Dissolved Oxygen</span>
+            <span class="cc-trend warn">▼ Trending</span>
+          </div>
+          <div class="cc-value"><span class="cc-val">6.8</span><span class="cc-unit">mg/L</span></div>
+          <div class="chart-wrap">
+            <canvas id="chartDO" role="img" aria-label="Dissolved oxygen over time">Dissolved oxygen readings from AQN-001.</canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-header">
+            <span class="cc-title">ORP</span>
+            <span class="cc-trend up">Good</span>
+          </div>
+          <div class="cc-value"><span class="cc-val">312</span><span class="cc-unit">mV</span></div>
+          <div class="chart-wrap">
+            <canvas id="chartORP" role="img" aria-label="ORP over time">ORP readings from AQN-001.</canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-header">
+            <span class="cc-title">EC / TDS</span>
+            <span class="cc-trend up">Nominal</span>
+          </div>
+          <div class="cc-value"><span class="cc-val">420</span><span class="cc-unit">µS/cm</span></div>
+          <div class="chart-wrap">
+            <canvas id="chartEC" role="img" aria-label="EC over time">EC/TDS readings from AQN-001.</canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-header">
+            <span class="cc-title">Nitrate</span>
+            <span class="cc-trend warn">▲ Elevated</span>
+          </div>
+          <div class="cc-value"><span class="cc-val">8.3</span><span class="cc-unit">mg/L NO₃</span></div>
+          <div class="chart-wrap">
+            <canvas id="chartNitrate" role="img" aria-label="Nitrate over time">Nitrate readings from AQN-001.</canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-header">
+            <span class="cc-title">Chlorophyll-a</span>
+            <span class="cc-trend down">⚠ Algae risk</span>
+          </div>
+          <div class="cc-value"><span class="cc-val">24.1</span><span class="cc-unit">µg/L</span></div>
+          <div class="chart-wrap">
+            <canvas id="chartChl" role="img" aria-label="Chlorophyll-a over time">Chlorophyll-a proxy readings from AQN-001.</canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- PFAS placeholder -->
+      <div class="chart-card" style="background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--card-r);padding:12px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="flex-shrink:0;width:40px;height:40px;border-radius:6px;background:rgba(167,139,250,.08);border:1px dashed rgba(167,139,250,.3);display:flex;align-items:center;justify-content:center;font-size:18px">🔬</div>
+          <div>
+            <div style="font-size:12px;color:rgba(167,139,250,.7);font-weight:600;margin-bottom:2px">PFAS On-Site Biosensor — Future Module</div>
+            <div style="font-size:11px;color:var(--txt3);line-height:1.5">Lateral-flow biosensor for PFAS quantification at sub-ng/L levels. Electrochemical aptamer-based detection. Hardware integration complete — awaiting regulatory validation. Estimated activation: Q2 2026.</div>
+          </div>
+          <div style="flex-shrink:0;padding:4px 10px;border-radius:4px;background:rgba(167,139,250,.08);border:1px dashed rgba(167,139,250,.3);font-size:10px;color:rgba(167,139,250,.6);font-family:var(--font-mono)">PENDING</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARCHITECTURE PANEL -->
+    <div class="arch-panel">
+      <div class="arch-title">Modular Node Architecture — Stackable Layer Design</div>
+      <div class="arch-nodes" id="archNodes"></div>
+    </div>
+
+    <!-- SCALE GRAPHIC -->
+    <div class="scale-panel">
+      <div class="scale-title">Deployment Scaling — Network Expansion Model</div>
+      <div class="scale-stages">
+        <div class="scale-stage">
+          <div class="scale-count">1</div>
+          <div class="scale-dots"><div class="scale-dot-big"></div></div>
+          <div class="scale-label">MVP Pilot<br>Single site</div>
+          <div class="scale-coverage">~1 ha coverage</div>
+        </div>
+        <div class="scale-arrow">→</div>
+        <div class="scale-stage">
+          <div class="scale-count">5</div>
+          <div class="scale-dots">
+            <div class="scale-dot"></div><div class="scale-dot amber"></div><div class="scale-dot"></div>
+            <div class="scale-dot amber"></div><div class="scale-dot"></div>
+          </div>
+          <div class="scale-label">Site Network<br>Multi-zone</div>
+          <div class="scale-coverage">~15 ha coverage</div>
+        </div>
+        <div class="scale-arrow">→</div>
+        <div class="scale-stage">
+          <div class="scale-count">12</div>
+          <div class="scale-dots">
+            <div class="scale-dot"></div><div class="scale-dot"></div><div class="scale-dot red"></div>
+            <div class="scale-dot amber"></div><div class="scale-dot"></div><div class="scale-dot"></div>
+            <div class="scale-dot amber"></div><div class="scale-dot"></div><div class="scale-dot"></div>
+            <div class="scale-dot"></div><div class="scale-dot"></div><div class="scale-dot"></div>
+          </div>
+          <div class="scale-label">Current Deploy<br>Multi-site</div>
+          <div class="scale-coverage">~80 ha coverage</div>
+        </div>
+        <div class="scale-arrow">→</div>
+        <div class="scale-stage">
+          <div class="scale-count" style="color:rgba(167,139,250,.7)">50+</div>
+          <div class="scale-dots" style="opacity:.4">
+            <div class="scale-dot"></div><div class="scale-dot"></div><div class="scale-dot"></div><div class="scale-dot"></div><div class="scale-dot"></div>
+            <div class="scale-dot"></div><div class="scale-dot"></div><div class="scale-dot"></div><div class="scale-dot"></div><div class="scale-dot"></div>
+          </div>
+          <div class="scale-label" style="color:rgba(167,139,250,.6)">Platform Scale<br>Regional</div>
+          <div class="scale-coverage" style="background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.2);color:rgba(167,139,250,.6)">500+ ha · Future</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISION PANEL -->
+    <div class="vision-panel">
+      <div class="vision-title">Emerging Sensor Roadmap & Platform Vision</div>
+      <div class="vision-sub">Validated hardware integrations — not vaporware. Modular pod architecture enables field-upgrade without node replacement.</div>
+      <div class="vision-items">
+        <div class="vision-item">
+          <div class="vi-name">PFAS On-Site Biosensor</div>
+          <div class="vi-desc">Electrochemical aptamer lateral-flow. Quantification at sub-ng/L. PFAS-6 panel (PFOA, PFOS, GenX).</div>
+          <div class="vi-eta">ETA Q2 2026 · Regulatory validation</div>
+        </div>
+        <div class="vision-item">
+          <div class="vi-name">Microplastics Detection</div>
+          <div class="vi-desc">Inline optical flow cell with ML particle classification. Size range 1–500µm. Count + morphology reporting.</div>
+          <div class="vi-eta">ETA Q3 2026 · Sensor partnership TBC</div>
+        </div>
+        <div class="vision-item">
+          <div class="vi-name">Pharmaceutical Residue Screening</div>
+          <div class="vi-desc">Immunoassay strip array for antibiotics, hormones, NSAIDs. Semi-quantitative, field-replaceable cartridge.</div>
+          <div class="vi-eta">ETA Q4 2026 · R&D phase</div>
+        </div>
+        <div class="vision-item">
+          <div class="vi-name">Self-Cleaning Photocatalytic Pod</div>
+          <div class="vi-desc">TiO₂ membrane with UV-activation. Continuous organic degradation. Autonomous cleaning cycle, 90-day service interval.</div>
+          <div class="vi-eta">ETA Q1 2026 · Prototype testing</div>
+        </div>
+        <div class="vision-item">
+          <div class="vi-name">Autonomous Service Vessel</div>
+          <div class="vi-desc">ASV integration for remote pod swap, calibration, and sample retrieval. GPS-dock positioning. Fleet dispatch API.</div>
+          <div class="vi-eta">ETA 2027 · Partnership exploration</div>
+        </div>
+        <div class="vision-item">
+          <div class="vi-name">Cyanobacteria Early Warning</div>
+          <div class="vi-desc">Phycocyanin fluorescence + ML bloom prediction. 48-hour advance warning. Regulatory alert integration.</div>
+          <div class="vi-eta">ETA Q2 2026 · Algorithm training</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- RIGHT PANEL -->
+  <aside class="right-panel" id="rightPanel">
+    <div class="rp-section">
+      <div class="rp-title">Selected Node</div>
+      <div class="node-header">
+        <div>
+          <div class="node-id" id="rpNodeId">AQN-001</div>
+          <div class="node-gps" id="rpGPS">-33.8688° S, 151.2093° E</div>
+        </div>
+        <div class="node-status-badge green" id="rpStatus">NOMINAL</div>
+      </div>
+      <div class="node-stats-grid">
+        <div class="node-stat">
+          <div class="ns-label">Battery</div>
+          <div class="ns-val green" id="rpBatt">94%</div>
+          <div class="battery-bar"><div class="battery-fill green" id="rpBattBar" style="width:94%"></div></div>
+        </div>
+        <div class="node-stat">
+          <div class="ns-label">Solar Input</div>
+          <div class="ns-val cyan" id="rpSolar">8.2W</div>
+        </div>
+        <div class="node-stat">
+          <div class="ns-label">LoRa RSSI</div>
+          <div class="ns-val" id="rpRSSI">
+            <div class="signal-bars" id="rpSignal"></div>
+          </div>
+        </div>
+        <div class="node-stat">
+          <div class="ns-label">Uptime</div>
+          <div class="ns-val" id="rpUptime">18d 4h</div>
+        </div>
+        <div class="node-stat">
+          <div class="ns-label">Last Service</div>
+          <div class="ns-val" style="font-size:12px" id="rpService">2024-11-28</div>
+        </div>
+        <div class="node-stat">
+          <div class="ns-label">Zone</div>
+          <div class="ns-val" id="rpZone" style="font-size:12px">Zone A</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rp-section">
+      <div class="rp-title">Attached Sensor Modules</div>
+      <div class="sensor-list" id="sensorList"></div>
+    </div>
+
+    <div class="rp-section">
+      <div class="rp-title">Treatment System</div>
+      <div class="treatment-grid">
+        <div class="treat-card" style="grid-column:span 2">
+          <div class="tc-label">Active Treatment Mode</div>
+          <div class="tc-val green" id="rpTreatMode">Continuous Filtration + UV-C Disinfection</div>
+        </div>
+        <div class="treat-card">
+          <div class="tc-label">Flow Rate</div>
+          <div class="tc-val" id="rpFlow">2.4 L/min</div>
+        </div>
+        <div class="treat-card">
+          <div class="tc-label">UV Status</div>
+          <div class="tc-val green" id="rpUV">ACTIVE</div>
+        </div>
+        <div class="treat-card">
+          <div class="tc-label">Carbon Pod Life</div>
+          <div class="tc-val amber" id="rpFilter">23% used</div>
+        </div>
+        <div class="treat-card">
+          <div class="tc-label">Membrane Life</div>
+          <div class="tc-val green" id="rpMembrane">12% used</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;padding:8px;background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.1);border-radius:5px;font-size:11px;color:var(--txt2)" id="rpRecommend">
+        All treatment systems operating within normal parameters. Next scheduled service in 34 days.
+      </div>
+    </div>
+
+    <div class="rp-section">
+      <div class="rp-title">Maintenance Schedule</div>
+      <div id="maintList"></div>
+    </div>
+
+    <div class="rp-section">
+      <div class="rp-title">Alert Intelligence</div>
+      <div id="alertIntel"></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+// NODE DATA
+const nodes = [
+  {id:'AQN-001',x:170,y:130,zone:'A',status:'green',lat:-33.8688,lng:151.2093,batt:94,solar:8.2,rssi:-72,uptime:'18d 4h',service:'2024-11-28',
+   sensors:[{name:'Turbidity',val:'16.2 NTU'},{name:'pH',val:'7.41'},{name:'DO',val:'7.1 mg/L'},{name:'Temperature',val:'22.4°C'},{name:'ORP',val:'318 mV'},{name:'EC/TDS',val:'412 µS/cm'}],
+   treatMode:'Continuous Filtration + UV-C Disinfection',flow:'2.4 L/min',uv:'ACTIVE',filter:'23% used',membrane:'12% used',recommend:'All treatment systems nominal. Next service in 34 days.',alerts:[]},
+  {id:'AQN-002',x:210,y:175,zone:'A',status:'amber',lat:-33.8701,lng:151.2101,batt:78,solar:6.8,rssi:-81,uptime:'18d 4h',service:'2024-10-15',
+   sensors:[{name:'Turbidity',val:'22.1 NTU'},{name:'pH',val:'7.38'},{name:'DO',val:'6.9 mg/L'},{name:'Temperature',val:'22.8°C'},{name:'ORP',val:'305 mV'},{name:'EC/TDS',val:'435 µS/cm'}],
+   treatMode:'High-Turbidity Protocol',flow:'3.1 L/min',uv:'ACTIVE',filter:'72% used',membrane:'48% used',recommend:'⚠ Carbon pod approaching replacement. Schedule service within 14 days.',alerts:[{msg:'Filter pod at 72% capacity — replacement recommended',sev:'amber'}]},
+  {id:'AQN-003',x:245,y:140,zone:'A',status:'green',lat:-33.8677,lng:151.2115,batt:88,solar:9.1,rssi:-69,uptime:'18d 4h',service:'2024-11-28',
+   sensors:[{name:'Turbidity',val:'14.8 NTU'},{name:'pH',val:'7.44'},{name:'DO',val:'7.4 mg/L'},{name:'Temperature',val:'22.1°C'},{name:'ORP',val:'325 mV'}],
+   treatMode:'Continuous Filtration',flow:'2.1 L/min',uv:'STANDBY',filter:'18% used',membrane:'9% used',recommend:'All systems nominal.',alerts:[]},
+  {id:'AQN-004',x:185,y:200,zone:'A',status:'green',lat:-33.8712,lng:151.2088,batt:91,solar:7.9,rssi:-75,uptime:'18d 4h',service:'2024-11-28',
+   sensors:[{name:'Turbidity',val:'17.3 NTU'},{name:'pH',val:'7.40'},{name:'DO',val:'7.0 mg/L'},{name:'EC/TDS',val:'418 µS/cm'}],
+   treatMode:'Continuous Filtration',flow:'2.2 L/min',uv:'ACTIVE',filter:'31% used',membrane:'19% used',recommend:'Nominal operation.',alerts:[]},
+  {id:'AQN-005',x:440,y:105,zone:'B',status:'green',lat:-33.8655,lng:151.2198,batt:86,solar:8.8,rssi:-77,uptime:'12d 7h',service:'2024-11-15',
+   sensors:[{name:'Turbidity',val:'21.4 NTU'},{name:'pH',val:'7.35'},{name:'DO',val:'6.6 mg/L'},{name:'Chlorophyll-a',val:'18.7 µg/L'},{name:'ORP',val:'298 mV'}],
+   treatMode:'Algal Bloom Prevention Protocol',flow:'2.8 L/min',uv:'ACTIVE',filter:'44% used',membrane:'27% used',recommend:'Elevated chlorophyll. UV-C running at 120% duty cycle.',alerts:[{msg:'Chlorophyll-a elevated — monitor for bloom',sev:'amber'}]},
+  {id:'AQN-006',x:490,y:130,zone:'B',status:'green',lat:-33.8662,lng:151.2213,batt:82,solar:7.4,rssi:-83,uptime:'12d 7h',service:'2024-11-15',
+   sensors:[{name:'Turbidity',val:'24.8 NTU'},{name:'pH',val:'7.29'},{name:'DO',val:'6.2 mg/L'},{name:'Nitrate',val:'11.2 mg/L'}],
+   treatMode:'Elevated Nutrient Protocol',flow:'2.9 L/min',uv:'ACTIVE',filter:'51% used',membrane:'33% used',recommend:'Nitrate levels above normal. Increasing monitoring frequency.',alerts:[{msg:'Nitrate at 11.2 mg/L — above threshold',sev:'amber'}]},
+  {id:'AQN-007',x:470,y:158,zone:'B',status:'red',lat:-33.8671,lng:151.2205,batt:67,solar:5.2,rssi:-91,uptime:'12d 7h',service:'2024-10-02',
+   sensors:[{name:'Turbidity',val:'48.6 NTU'},{name:'pH',val:'7.18'},{name:'DO',val:'5.4 mg/L'},{name:'Nitrate',val:'14.7 mg/L'},{name:'Chlorophyll-a',val:'31.2 µg/L'}],
+   treatMode:'EMERGENCY — Runoff Response',flow:'4.0 L/min',uv:'ACTIVE',filter:'87% used',membrane:'65% used',recommend:'⛔ CRITICAL: Carbon pod at 87%. High turbidity. Dispatch service immediately.',alerts:[{msg:'High turbidity 48.6 NTU — agricultural runoff signature detected',sev:'red'},{msg:'Filter pod critical — immediate replacement required',sev:'red'}]},
+  {id:'AQN-008',x:320,y:258,zone:'C',status:'amber',lat:-33.8728,lng:151.2155,batt:73,solar:6.1,rssi:-85,uptime:'9d 2h',service:'2024-11-01',
+   sensors:[{name:'Turbidity',val:'19.7 NTU'},{name:'pH',val:'7.32'},{name:'DO',val:'5.8 mg/L'},{name:'EC/TDS',val:'448 µS/cm'}],
+   treatMode:'Low-DO Protocol — Aeration Mode',flow:'2.0 L/min',uv:'STANDBY',filter:'39% used',membrane:'22% used',recommend:'⚠ Dissolved oxygen trending down. Monitor closely.',alerts:[{msg:'DO at 5.8 mg/L — approaching 5.0 mg/L alert threshold',sev:'amber'}]},
+  {id:'AQN-009',x:380,y:262,zone:'C',status:'amber',lat:-33.8733,lng:151.2167,batt:69,solar:5.8,rssi:-88,uptime:'9d 2h',service:'2024-11-01',
+   sensors:[{name:'Turbidity',val:'23.1 NTU'},{name:'DO',val:'5.1 mg/L'},{name:'ORP',val:'274 mV'},{name:'pH',val:'7.25'}],
+   treatMode:'Low-DO Protocol — Aeration Mode',flow:'2.2 L/min',uv:'STANDBY',filter:'61% used',membrane:'40% used',recommend:'⚠ DO critically low at 5.1 mg/L. Carbon pod at 61% — schedule replacement.',alerts:[{msg:'DO 5.1 mg/L — below acceptable minimum',sev:'red'}]},
+  {id:'AQN-010',x:75,y:75,zone:'D',status:'green',lat:-33.8641,lng:151.2042,batt:95,solar:9.4,rssi:-68,uptime:'22d 11h',service:'2024-12-01',
+   sensors:[{name:'Turbidity',val:'12.3 NTU'},{name:'pH',val:'7.46'},{name:'DO',val:'8.1 mg/L'},{name:'Temperature',val:'21.8°C'},{name:'ORP',val:'334 mV'}],
+   treatMode:'Aquaculture Optimize — Continuous',flow:'1.9 L/min',uv:'ACTIVE',filter:'15% used',membrane:'8% used',recommend:'Optimal aquaculture conditions. All parameters within salmonid growth window.',alerts:[]},
+  {id:'AQN-011',x:100,y:100,zone:'D',status:'green',lat:-33.8648,lng:151.2055,batt:90,solar:8.6,rssi:-72,uptime:'22d 11h',service:'2024-12-01',
+   sensors:[{name:'Turbidity',val:'13.8 NTU'},{name:'pH',val:'7.43'},{name:'DO',val:'7.9 mg/L'},{name:'Temperature',val:'22.0°C'}],
+   treatMode:'Aquaculture Optimize — Continuous',flow:'2.0 L/min',uv:'ACTIVE',filter:'17% used',membrane:'10% used',recommend:'Nominal. Growth conditions optimal.',alerts:[]},
+  {id:'AQN-012',x:85,y:110,zone:'D',status:'green',lat:-33.8653,lng:151.2048,batt:87,solar:8.0,rssi:-74,uptime:'22d 11h',service:'2024-12-01',
+   sensors:[{name:'Turbidity',val:'14.1 NTU'},{name:'pH',val:'7.41'},{name:'DO',val:'8.0 mg/L'}],
+   treatMode:'Aquaculture Optimize — Continuous',flow:'2.0 L/min',uv:'ACTIVE',filter:'20% used',membrane:'11% used',recommend:'Nominal.',alerts:[]},
+];
+
+let selectedNode = nodes[0];
+
+// RENDER NODES ON MAP
+function renderNodes(){
+  const overlay = document.getElementById('mapOverlay');
+  overlay.innerHTML='';
+  nodes.forEach(n=>{
+    // ripple
+    const rip = document.createElement('div');
+    rip.className='node-ripple';
+    rip.style.left=n.x+'px';rip.style.top=n.y+'px';
+    rip.style.color=n.status==='green'?'var(--green)':n.status==='amber'?'var(--amber)':'var(--red)';
+    overlay.appendChild(rip);
+    // marker
+    const m = document.createElement('div');
+    m.className=`node-marker ${n.status} ${n.id===selectedNode.id?'selected':''}`;
+    m.style.left=n.x+'px';m.style.top=n.y+'px';
+    m.dataset.id=n.id;
+    // tooltip
+    const tt = document.createElement('div');
+    tt.className='node-tooltip';tt.style.display='none';
+    tt.innerHTML=`<div class="nt-id">${n.id}</div>
+      <div class="nt-row"><span class="k">Battery</span><span class="v">${n.batt}%</span></div>
+      <div class="nt-row"><span class="k">RSSI</span><span class="v">${n.rssi} dBm</span></div>
+      ${n.sensors[0]?`<div class="nt-row"><span class="k">${n.sensors[0].name}</span><span class="v">${n.sensors[0].val}</span></div>`:''}
+      ${n.sensors[1]?`<div class="nt-row"><span class="k">${n.sensors[1].name}</span><span class="v">${n.sensors[1].val}</span></div>`:''}`;
+    m.appendChild(tt);
+    m.addEventListener('mouseenter',()=>{tt.style.display='block'});
+    m.addEventListener('mouseleave',()=>{tt.style.display='none'});
+    m.addEventListener('click',()=>selectNode(n));
+    overlay.appendChild(m);
+    // label
+    const lbl = document.createElement('div');
+    lbl.className='node-label';lbl.style.left=n.x+'px';lbl.style.top=n.y+'px';
+    lbl.textContent=n.id;
+    overlay.appendChild(lbl);
+  });
+}
+
+function selectNode(n){
+  selectedNode=n;
+  renderNodes();
+  updateRightPanel(n);
+  document.getElementById('chartsTitle').textContent=`${n.id} · Time Series — Zone ${n.zone}`;
+  regenerateCharts();
+}
+
+function updateRightPanel(n){
+  document.getElementById('rpNodeId').textContent=n.id;
+  document.getElementById('rpGPS').textContent=`${n.lat}° S, ${n.lng}° E`;
+  const sb=document.getElementById('rpStatus');
+  sb.textContent=n.status==='green'?'NOMINAL':n.status==='amber'?'WARNING':'CRITICAL';
+  sb.className='node-status-badge '+n.status;
+  const bPct=n.batt;
+  document.getElementById('rpBatt').textContent=bPct+'%';
+  document.getElementById('rpBatt').className='ns-val '+(bPct>80?'green':bPct>40?'amber':'red');
+  const bBar=document.getElementById('rpBattBar');
+  bBar.style.width=bPct+'%';
+  bBar.className='battery-fill '+(bPct>80?'green':bPct>40?'amber':'red');
+  document.getElementById('rpSolar').textContent=n.solar+'W';
+  document.getElementById('rpUptime').textContent=n.uptime;
+  document.getElementById('rpService').textContent=n.service;
+  document.getElementById('rpZone').textContent='Zone '+n.zone;
+  // signal bars
+  const sig=document.getElementById('rpSignal');
+  const bars=[4,7,10,14,18];
+  const sigLvl=n.rssi>-70?5:n.rssi>-80?4:n.rssi>-85?3:n.rssi>-90?2:1;
+  sig.innerHTML=bars.map((h,i)=>`<div class="sb ${i<sigLvl?'active':''}" style="height:${h}px;width:4px"></div>`).join('');
+  // sensors
+  const sl=document.getElementById('sensorList');
+  sl.innerHTML=n.sensors.map(s=>`<div class="sensor-tag"><div class="st-dot"></div><span class="st-name">${s.name}</span><span class="st-val">${s.val}</span></div>`).join('');
+  // treatment
+  document.getElementById('rpTreatMode').textContent=n.treatMode;
+  document.getElementById('rpFlow').textContent=n.flow;
+  const uv=document.getElementById('rpUV');
+  uv.textContent=n.uv;uv.className='tc-val '+(n.uv==='ACTIVE'?'green':n.uv==='STANDBY'?'amber':'red');
+  const fp=parseInt(n.filter);
+  const fv=document.getElementById('rpFilter');
+  fv.textContent=n.filter;fv.className='tc-val '+(fp>70?'red':fp>50?'amber':'green');
+  document.getElementById('rpMembrane').textContent=n.membrane;
+  document.getElementById('rpRecommend').textContent=n.recommend;
+  // alerts intel
+  const ai=document.getElementById('alertIntel');
+  if(n.alerts&&n.alerts.length){
+    ai.innerHTML=n.alerts.map(a=>`<div class="alert-item ${a.sev}" style="margin-bottom:6px"><div class="a-msg">${a.msg}</div><div class="a-zone">${n.id} · Zone ${n.zone}</div></div>`).join('');
+  } else {
+    ai.innerHTML='<div style="font-size:11px;color:var(--txt3);padding:6px 0">No active alerts for this node.</div>';
+  }
+  // maint
+  const ml=document.getElementById('maintList');
+  const mItems=[
+    {icon:'🔧',task:'Sensor calibration',date:'Due: 2025-01-15',sev:'green',badge:'Scheduled'},
+    {icon:'🫧',task:'Filter pod inspection',date:`Due: 2025-01-${n.status==='red'?'05':n.status==='amber'?'12':'28'}`,sev:n.status,badge:n.status==='red'?'URGENT':n.status==='amber'?'Soon':'OK'},
+    {icon:'⚡',task:'Battery & solar check',date:'Due: 2025-02-01',sev:'green',badge:'Scheduled'},
+  ];
+  ml.innerHTML=mItems.map(m=>`<div class="maint-item"><div class="maint-icon ${m.sev}">${m.icon}</div><div class="maint-info"><div class="maint-task">${m.task}</div><div class="maint-date">${m.date}</div></div><div class="maint-badge ${m.sev}">${m.badge}</div></div>`).join('');
+}
+
+// ARCHITECTURE PANEL
+const archConfigs=[
+  {title:'AQN Basic',layers:[
+    {cls:'power',txt:'Solar + LiFePO4'},
+    {cls:'comm',txt:'ESP32 + LoRa SX1276'},
+    {cls:'ctrl',txt:'ESP32 MCU'},
+    {cls:'sensor',txt:'Turbidity · pH · Temp'},
+  ]},
+  {title:'AQN Standard',layers:[
+    {cls:'power',txt:'Solar + LiFePO4 2x'},
+    {cls:'comm',txt:'ESP32 + LoRa + GPS'},
+    {cls:'ctrl',txt:'ESP32 + Edge ML'},
+    {cls:'sensor',txt:'pH · DO · ORP · EC'},
+    {cls:'treatment',txt:'Carbon Pod'},
+  ]},
+  {title:'AQN Pro',layers:[
+    {cls:'power',txt:'Solar Array + 200Wh'},
+    {cls:'comm',txt:'LoRa + 4G Fallback'},
+    {cls:'ctrl',txt:'ESP32 + RISC-V co-proc'},
+    {cls:'sensor',txt:'Full Suite 8 sensors'},
+    {cls:'treatment',txt:'Carbon + UV-LED + Membrane'},
+  ]},
+  {title:'AQN Pro+',layers:[
+    {cls:'power',txt:'Solar + Wind + 400Wh'},
+    {cls:'comm',txt:'LoRa Mesh + Satellite'},
+    {cls:'ctrl',txt:'Multi-core + LoRaWAN GW'},
+    {cls:'sensor',txt:'Full + Chlorophyll + Nitrate'},
+    {cls:'treatment',txt:'Full Treatment Stack'},
+    {cls:'future',txt:'PFAS Biosensor (coming)'},
+  ]},
+  {title:'Future Node',layers:[
+    {cls:'power',txt:'Hybrid + Energy Harvest'},
+    {cls:'comm',txt:'Mesh + AI Gateway'},
+    {cls:'ctrl',txt:'Edge AI — Anomaly Detect'},
+    {cls:'sensor',txt:'Full + Microplastics + Pharma'},
+    {cls:'treatment',txt:'Photocatalytic + ASV Dock'},
+    {cls:'future',txt:'PFAS + Microplastics + Pharma'},
+  ]},
+];
+function renderArch(){
+  const el=document.getElementById('archNodes');
+  el.innerHTML=archConfigs.map(c=>`
+    <div class="arch-node">
+      <div class="arch-node-title">${c.title}</div>
+      <div class="arch-stack">
+        ${c.layers.map(l=>`<div class="arch-layer ${l.cls}">${l.txt}</div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// CHARTS
+let charts={};
+function makeChartData(n, variance, base, trend){
+  const pts=20;
+  const d=[];
+  for(let i=0;i<pts;i++){
+    d.push(+(base + Math.sin(i*0.4)*variance*0.5 + (Math.random()-0.5)*variance + trend*i/pts).toFixed(2));
+  }
+  return d;
+}
+function timeLabels(n){
+  const l=[];const now=new Date();
+  for(let i=n-1;i>=0;i--){
+    const t=new Date(now-i*5*60000);
+    l.push(t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0'));
+  }
+  return l;
+}
+
+const chartDefs=[
+  {id:'chartTurb',color:'#f59e0b',alertColor:'rgba(239,68,68,.2)',alertVal:25,base:18,var:4,trend:2},
+  {id:'chartTemp',color:'#00d4c8',base:22.6,var:0.4,trend:0.1},
+  {id:'chartPH',color:'#10b981',base:7.42,var:0.08,trend:-0.02},
+  {id:'chartDO',color:'#38bdf8',alertColor:'rgba(239,68,68,.15)',alertVal:6,base:6.8,var:0.3,trend:-0.4},
+  {id:'chartORP',color:'#a78bfa',base:312,var:15,trend:-5},
+  {id:'chartEC',color:'#00d4c8',base:420,var:20,trend:5},
+  {id:'chartNitrate',color:'#f59e0b',alertColor:'rgba(245,158,11,.15)',alertVal:10,base:8.3,var:1.5,trend:1.2},
+  {id:'chartChl',color:'#ef4444',alertColor:'rgba(239,68,68,.2)',alertVal:20,base:24.1,var:4,trend:2.5},
+];
+
+function regenerateCharts(){
+  const labels=timeLabels(20);
+  chartDefs.forEach(cd=>{
+    if(charts[cd.id]){charts[cd.id].destroy();delete charts[cd.id];}
+    const canvas=document.getElementById(cd.id);
+    if(!canvas)return;
+    const data=makeChartData(selectedNode,cd.var,cd.base,cd.trend||0);
+    const datasets=[{
+      data,borderColor:cd.color,borderWidth:1.5,pointRadius:0,
+      fill:true,backgroundColor:cd.color+'18',tension:0.3
+    }];
+    if(cd.alertVal){
+      datasets.push({
+        data:Array(20).fill(cd.alertVal),
+        borderColor:'rgba(239,68,68,.4)',borderWidth:1,
+        borderDash:[4,3],pointRadius:0,fill:false,tension:0
+      });
+    }
+    charts[cd.id]=new Chart(canvas,{
+      type:'line',
+      data:{labels,datasets},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,
+          callbacks:{label:ctx=>ctx.datasetIndex===0?ctx.parsed.y.toFixed(2):null}}},
+        scales:{
+          x:{display:false,grid:{display:false}},
+          y:{display:false,grid:{display:false}}
+        },
+        animation:{duration:400}
+      }
+    });
+  });
+}
+
+// INTERACTIONS
+function switchTab(el,tab){
+  document.querySelectorAll('.use-tab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  const tabKpis={
+    aqua:{si:'84',title:'Aquaculture KPIs — DO, Temperature, pH Critical'},
+    irr:{si:'79',title:'Irrigation KPIs — Nitrate, EC, Turbidity Critical'},
+    pool:{si:'91',title:'Pool KPIs — Chlorine, pH, Turbidity Critical'},
+    env:{si:'76',title:'Environmental Monitoring — Full Spectrum'},
+  };
+  if(tabKpis[tab]){
+    document.getElementById('siScore').textContent=tabKpis[tab].si;
+  }
+}
+function filterZone(z){
+  // highlight zone nodes
+  nodes.forEach(n=>{
+    if(n.zone===z&&n.id!==selectedNode.id){
+      // flash
+    }
+  });
+}
+let overlays={};
+function toggleOverlay(btn,type){
+  btn.classList.toggle('active');
+  overlays[type]=!overlays[type];
+}
+function toggleMapMode(btn){btn.classList.toggle('active')}
+function toggleFuture(btn){btn.classList.toggle('active')}
+function setPeriod(el,p){
+  document.querySelectorAll('.cpt').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  regenerateCharts();
+}
+function scrollToAlerts(){document.getElementById('alert-section').scrollIntoView({behavior:'smooth'})}
+
+// LIVE DATA SIMULATION
+setInterval(()=>{
+  // update a random node's battery slightly
+  const n=nodes[Math.floor(Math.random()*nodes.length)];
+  n.batt=Math.max(20,Math.min(100,n.batt+(Math.random()>.6?0.1:-0.05)));
+  if(n.id===selectedNode.id) updateRightPanel(n);
+},8000);
+
+// INIT
+renderNodes();
+updateRightPanel(selectedNode);
+renderArch();
+// Charts after short delay for DOM
+setTimeout(()=>{regenerateCharts();},200);
+</script>
+</body>
+</html>
