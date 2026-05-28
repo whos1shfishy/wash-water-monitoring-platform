@@ -1,4 +1,4 @@
-# Bill of Materials — AquaSense
+# Bill of Materials — BLASTOISE
 
 | # | Component | Qty | Est. Cost AUD | Notes |
 |---|---|---|---|---|
