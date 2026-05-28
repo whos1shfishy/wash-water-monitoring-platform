@@ -1,0 +1,189 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <math.h>
+
+// ── LCD ──────────────────────────────────────────────
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // change to 0x3F if blank
+
+// ── Pins ─────────────────────────────────────────────
+const int LDR1_PIN       = A0;   // Pod 1 turbidity
+const int LDR2_PIN       = A2;   // Pod 2 turbidity
+const int THERMISTOR_PIN = A1;   // Temperature
+
+const int RGB_R_PIN    = 9;
+const int RGB_G_PIN    = 10;
+const int RGB_B_PIN    = 11;
+
+const int STATUS_LED_PIN = 3;    // visual indicator LEDs
+const int ILLUM_PIN      = 4;    // both sensing LEDs, always ON
+const int BUTTON_PIN     = 2;    // manual/auto toggle
+
+// ── Turbidity thresholds ─────────────────────────────
+const int LDR_CLEAN = 700;   // >= clean
+const int LDR_DIRTY = 400;   // < dirty, in-between = filtering
+
+// ── Thermistor constants ─────────────────────────────
+const float SERIES_RESISTOR     = 10000.0;
+const float THERMISTOR_NOMINAL  = 10000.0;
+const float TEMPERATURE_NOMINAL = 25.0;
+const float B_COEFFICIENT       = 3950.0;
+
+// ── State ─────────────────────────────────────────────
+bool manualMode = false;
+bool lastButtonState = HIGH;
+unsigned long lastDebounce = 0;
+const unsigned long debounceDelay = 50;
+
+// ── Helpers ───────────────────────────────────────────
+void setRGB(bool r, bool g, bool b) {
+  digitalWrite(RGB_R_PIN, r ? HIGH : LOW);
+  digitalWrite(RGB_G_PIN, g ? HIGH : LOW);
+  digitalWrite(RGB_B_PIN, b ? HIGH : LOW);
+}
+
+float readTemperatureC() {
+  int raw = analogRead(THERMISTOR_PIN);
+
+  if (raw <= 0) raw = 1;
+  if (raw >= 1023) raw = 1022;
+
+  float resistance = SERIES_RESISTOR * (1023.0 / raw - 1.0);
+
+  float s = resistance / THERMISTOR_NOMINAL;
+  s = log(s);
+  s /= B_COEFFICIENT;
+  s += 1.0 / (TEMPERATURE_NOMINAL + 273.15);
+  s = 1.0 / s;
+  s -= 273.15;
+
+  return s;
+}
+
+// 0 = clean, 1 = filtering, 2 = dirty
+int getStatus(int ldrVal) {
+  if (ldrVal >= LDR_CLEAN) return 0;
+  if (ldrVal >= LDR_DIRTY) return 1;
+  return 2;
+}
+
+void handleButton() {
+  bool reading = digitalRead(BUTTON_PIN);
+
+  if (reading != lastButtonState) {
+    lastDebounce = millis();
+  }
+
+  if ((millis() - lastDebounce) > debounceDelay) {
+    static bool stableState = HIGH;
+
+    if (reading != stableState) {
+      stableState = reading;
+
+      if (stableState == LOW) {
+        manualMode = !manualMode;
+      }
+    }
+  }
+
+  lastButtonState = reading;
+}
+
+// ── Setup ─────────────────────────────────────────────
+void setup() {
+  pinMode(RGB_R_PIN, OUTPUT);
+  pinMode(RGB_G_PIN, OUTPUT);
+  pinMode(RGB_B_PIN, OUTPUT);
+
+  pinMode(STATUS_LED_PIN, OUTPUT);
+  pinMode(ILLUM_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+  setRGB(false, false, false);
+  digitalWrite(STATUS_LED_PIN, LOW);
+  digitalWrite(ILLUM_PIN, HIGH);   // sensing LEDs ON from startup
+
+  Serial.begin(9600);
+
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("AquaPod v1.0");
+  lcd.setCursor(0, 1);
+  lcd.print("Starting...");
+  delay(1500);
+}
+
+// ── Main loop ─────────────────────────────────────────
+void loop() {
+  handleButton();
+
+  // Keep sensing LEDs always ON for continuous monitoring
+  digitalWrite(ILLUM_PIN, HIGH);
+
+  int ldr1 = analogRead(LDR1_PIN);
+  int ldr2 = analogRead(LDR2_PIN);
+  float tempC = readTemperatureC();
+
+  int status1 = getStatus(ldr1);
+  int status2 = getStatus(ldr2);
+
+  // Worst-case overall status
+  int overallStatus = max(status1, status2);
+
+  Serial.print("P1: ");
+  Serial.print(ldr1);
+  Serial.print(" | P2: ");
+  Serial.print(ldr2);
+  Serial.print(" | Temp: ");
+  Serial.print(tempC, 1);
+  Serial.print(" C | Mode: ");
+  Serial.println(manualMode ? "MANUAL" : "AUTO");
+
+  if (manualMode) {
+    setRGB(false, false, true);       // blue
+    digitalWrite(STATUS_LED_PIN, HIGH);
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("MANUAL MODE     ");
+    lcd.setCursor(0, 1);
+    lcd.print("P1:");
+    lcd.print(ldr1);
+    lcd.print(" P2:");
+    lcd.print(ldr2);
+  } 
+  else {
+    if (overallStatus == 0) {
+      setRGB(false, true, false);     // green
+      digitalWrite(STATUS_LED_PIN, LOW);
+
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("AUTO: Clean     ");
+    } 
+    else if (overallStatus == 1) {
+      setRGB(true, true, false);      // yellow
+      digitalWrite(STATUS_LED_PIN, HIGH);
+
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("AUTO: Filtering ");
+    } 
+    else {
+      setRGB(true, false, false);     // red
+      digitalWrite(STATUS_LED_PIN, HIGH);
+
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("AUTO: Dirty     ");
+    }
+
+    lcd.setCursor(0, 1);
+    lcd.print("P1:");
+    lcd.print(ldr1);
+    lcd.print(" P2:");
+    lcd.print(ldr2);
+  }
+
+  delay(200);
+}
